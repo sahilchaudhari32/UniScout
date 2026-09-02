@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -25,8 +26,22 @@ export default function Home() {
   const { colors: c } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [collegeData, setCollegeData] = useState<any[]>([]);
-  useEffect(() => { searchColleges({ page: 1, limit: 10, sort: "rating" }).then((result) => setCollegeData(result.items)).catch(() => {}); }, []);
-  const refresh = async () => { setRefreshing(true); try { const result = await searchColleges({ page: 1, limit: 10, sort: "rating" }); setCollegeData(result.items); } finally { setRefreshing(false); } };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  async function loadColleges() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await searchColleges({ page: 1, limit: 10, sort: "rating" });
+      setCollegeData(result.items);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to load colleges");
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { loadColleges(); }, []);
+  const refresh = async () => { setRefreshing(true); await loadColleges(); setRefreshing(false); };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView
@@ -125,6 +140,8 @@ export default function Home() {
           ))}
         </ScrollView>
         <SectionTitle title="Near you" link="View all" />
+        {loading ? <ActivityIndicator color={c.primary} style={{ marginVertical: 28 }} /> : null}
+        {!loading && error ? <Pressable onPress={loadColleges}><Text style={{ color: c.danger, marginBottom: 20 }}>Could not load colleges: {error}. Tap to retry.</Text></Pressable> : null}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
