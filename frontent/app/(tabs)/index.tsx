@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -9,7 +9,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { colleges, categories } from "../../src/data";
+import { categories } from "../../src/data";
+import { searchColleges } from "../../src/api";
 import {
   CollegeCard,
   Header,
@@ -23,10 +24,9 @@ export default function Home() {
   const router = useRouter();
   const { colors: c } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
-  const refresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 700);
-  };
+  const [collegeData, setCollegeData] = useState<any[]>([]);
+  useEffect(() => { searchColleges({ page: 1, limit: 10, sort: "rating" }).then((result) => setCollegeData(result.items)).catch(() => {}); }, []);
+  const refresh = async () => { setRefreshing(true); try { const result = await searchColleges({ page: 1, limit: 10, sort: "rating" }); setCollegeData(result.items); } finally { setRefreshing(false); } };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView
@@ -41,11 +41,12 @@ export default function Home() {
         contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
       >
         <Header
-          title="Good morning, Aarav"
+          title="Good morning"
           subtitle="Find a place to grow."
           action={
             <Pressable
               accessibilityLabel="Notifications"
+              onPress={() => router.push("/notifications" as any)}
               style={({ pressed }) => [s.notify, pressed && s.pressed]}
             >
               <Ionicons
@@ -95,6 +96,7 @@ export default function Home() {
           {categories.map((x, i) => (
             <Pressable
               key={x}
+              onPress={() => router.push({ pathname: "/(tabs)/search", params: { interest: x } })}
               style={({ pressed }) => [s.categoryItem, pressed && s.pressed]}
             >
               <View
@@ -122,13 +124,13 @@ export default function Home() {
             </Pressable>
           ))}
         </ScrollView>
-        <SectionTitle title="Near you" link="View map" />
+        <SectionTitle title="Near you" link="View all" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={{ marginBottom: 12 }}
         >
-          {colleges.slice(0, 3).map((x) => (
+          {collegeData.slice(0, 3).map((x) => (
             <CollegeCard
               key={x.id}
               college={x}
@@ -138,7 +140,7 @@ export default function Home() {
           ))}
         </ScrollView>
         <SectionTitle title="Popular this week" link="View all" />
-        {colleges.slice(2).map((x) => (
+        {collegeData.slice(2).map((x) => (
           <CollegeCard
             key={x.id}
             college={x}

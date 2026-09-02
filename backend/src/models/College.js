@@ -24,6 +24,7 @@ const schema = new mongoose.Schema(
     admissionInfo: String,
     images: [String],
     verified: { type: Boolean, default: false, index: true },
+    rating: { type: Number, min: 0, max: 5, default: 0, index: true },
   },
   { timestamps: true },
 );

@@ -5,8 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useRouter } from "expo-router";
-import { fetchCollegesWithFallback } from "../../src/api";
-import { colleges, College } from "../../src/data";
+import { fetchNearby } from "../../src/api";
+import { College } from "../../src/data";
 import { CollegeCard, Header } from "../../src/components";
 import { useTheme } from "../../src/theme";
 
@@ -22,16 +22,12 @@ export default function Nearby() {
   const { colors } = useTheme();
   const mapRef = useRef<MapView>(null);
   const [region, setRegion] = useState<Region>(fallbackRegion);
-  const [collegeData, setCollegeData] = useState(colleges);
+  const [collegeData, setCollegeData] = useState<College[]>([]);
   const [userLocation, setUserLocation] =
     useState<Location.LocationObjectCoords | null>(null);
   const [locationError, setLocationError] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const watcher = useRef<Location.LocationSubscription | null>(null);
-
-  useEffect(() => {
-    fetchCollegesWithFallback().then(setCollegeData);
-  }, []);
 
   const loadUserLocation = useCallback(async () => {
     setLocationError("");
@@ -51,6 +47,8 @@ export default function Nearby() {
 
     setUserLocation(location.coords);
     setRegion(nextRegion);
+    const nearby = await fetchNearby(location.coords.latitude, location.coords.longitude);
+    setCollegeData(nearby);
     const address = await Location.reverseGeocodeAsync({ latitude: location.coords.latitude, longitude: location.coords.longitude });
     if (address[0]) setLocationError([address[0].city, address[0].region].filter(Boolean).join(", "));
   }, []);

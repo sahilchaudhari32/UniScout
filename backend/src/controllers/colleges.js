@@ -2,6 +2,7 @@ import College from "../models/College.js";
 import User from "../models/User.js";
 import { AppError, ok, pagination } from "../utils/api.js";
 import mongoose from "mongoose";
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\x5B\x5D\\]/g, "\\\\$&");
 export async function list(req, res) {
   const page = Math.max(Number(req.query.page) || 1, 1),
     limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50),
@@ -17,11 +18,11 @@ export async function list(req, res) {
     } = req.query;
   const filter = {};
   if (search) filter.$text = { $search: search };
-  if (city) filter.city = new RegExp(`^${city}$`, "i");
-  if (state) filter.state = new RegExp(`^${state}$`, "i");
-  if (type) filter.type = new RegExp(type, "i");
-  if (course) filter.courses = { $regex: course, $options: "i" };
-  if (facility) filter.facilities = { $regex: facility, $options: "i" };
+  if (city) filter.city = new RegExp(`^${escapeRegex(city)}$`, "i");
+  if (state) filter.state = new RegExp(`^${escapeRegex(state)}$`, "i");
+  if (type) filter.type = new RegExp(escapeRegex(type), "i");
+  if (course) filter.courses = { $regex: escapeRegex(course), $options: "i" };
+  if (facility) filter.facilities = { $regex: escapeRegex(facility), $options: "i" };
   if (verified !== undefined) filter.verified = verified === "true";
   const sortMap = { name: 1, createdAt: -1, rating: -1 };
   const [items, total] = await Promise.all([
@@ -84,6 +85,8 @@ export async function nearby(req, res) {
       422,
       "INVALID_COORDINATES",
     );
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
   const items = await College.aggregate([
     {
       $geoNear: {
@@ -94,7 +97,8 @@ export async function nearby(req, res) {
         query: { verified: true },
       },
     },
-    { $limit: 100 },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
   ]);
   return ok(res, { items });
 }

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler } from "../utils/api.js";
+import { asyncHandler, ok } from "../utils/api.js";
 import { login, me, register, updateProfile } from "../controllers/auth.js";
 import { authenticate } from "../middleware/auth.js";
 const router = Router();
@@ -7,4 +7,5 @@ router.post("/register", asyncHandler(register));
 router.post("/login", asyncHandler(login));
 router.get("/me", authenticate, asyncHandler(me));
 router.patch("/profile", authenticate, asyncHandler(updateProfile));
+router.post("/logout", authenticate, asyncHandler((req, res) => ok(res, {}, "Logged out")));
 export default router;

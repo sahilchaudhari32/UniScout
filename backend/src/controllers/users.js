@@ -10,7 +10,7 @@ export async function profile(req, res) {
 }
 export async function update(req, res) {
   const allowed = {};
-  for (const key of ["name", "avatar", "preferences"])
+  for (const key of ["name", "phone", "avatar", "preferences"])
     if (req.body[key] !== undefined) allowed[key] = req.body[key];
   const user = await User.findByIdAndUpdate(req.user._id, allowed, {
     new: true,

@@ -12,6 +12,7 @@ export const publicUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
+  phone: user.phone || "",
   avatar: user.avatar,
   role: user.role,
   preferences: user.preferences,

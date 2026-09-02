@@ -1,85 +1,62 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { fetchCollegesWithFallback } from "../../src/api";
-import { colleges } from "../../src/data";
-import { CollegeCard, Header, Pill, SearchBar, s } from "../../src/components";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { searchColleges } from "../../src/api";
+import { CollegeCard, EmptyState, ErrorState, Header, Pill, SearchBar, s } from "../../src/components";
+import { useTheme } from "../../src/theme";
 
-const filterOptions = ["All", "Engineering", "Business", "Science", "Arts"];
+const filterOptions = ["All", "Engineering", "Business", "Science", "Arts", "Medical", "Law"];
 
 export default function Search() {
   const router = useRouter();
-  const [filter, setFilter] = useState("All");
+  const { colors } = useTheme();
+  const params = useLocalSearchParams<{ interest?: string }>();
+  const [filter, setFilter] = useState(params.interest || "All");
   const [query, setQuery] = useState("");
-  const [collegeData, setCollegeData] = useState(colleges);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetchCollegesWithFallback().then(setCollegeData);
-  }, []);
+    const timer = setTimeout(() => load(), 350);
+    return () => clearTimeout(timer);
+  }, [query, filter]);
 
-  const data = useMemo(
-    () => collegeData.filter((college) =>
-      (filter === "All" || college.courses.includes(filter)) &&
-      (college.name + " " + college.city + " " + college.state + " " + college.courses.join(" ")).toLowerCase().includes(query.toLowerCase()),
-    ),
-    [collegeData, filter, query],
-  );
+  async function load(refresh = false) {
+    if (refresh) setRefreshing(true); else setLoading(true);
+    setError(false);
+    try {
+      const result = await searchColleges({ search: query, course: filter === "All" ? undefined : filter, page: 1, limit: 20, sort: "rating" });
+      setItems(result.items);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F8F5" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: 20, flex: 1 }}>
         <Header title="Discover" subtitle="Find your next chapter" />
         <SearchBar value={query} onChangeText={setQuery} />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterList}
-          contentContainerStyle={styles.filterContent}
-        >
-          {filterOptions.map((option) => (
-            <Pill
-              key={option}
-              label={option}
-              active={option === filter}
-              onPress={() => setFilter(option)}
-            />
-          ))}
-        </ScrollView>
-        <View style={[s.section, { marginTop: 15 }]}>
-          <Text style={[s.sectionTitle, { fontSize: 16 }]}>
-            {data.length} colleges found
-          </Text>
-          <Text style={{ color: "#175C54", fontWeight: "700" }}>
-            Sort: Recommended
-          </Text>
-        </View>
-        <FlatList
-          data={data}
-          keyExtractor={(x) => x.id}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <CollegeCard
-              college={item}
-              onPress={() => router.push(`/college/${item.id}`)}
-            />
-          )}
-          contentContainerStyle={{ paddingBottom: 30 }}
-        />
+        <FlatList horizontal data={filterOptions} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: 12 }}
+          renderItem={({ item }) => <Pill label={item} active={item === filter} onPress={() => setFilter(item)} />} />
+        {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> :
+          error ? <ErrorState onRetry={() => load()} /> :
+          <FlatList
+            data={items}
+            keyExtractor={(item) => item.id}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}
+            ListHeaderComponent={<Text style={[s.sectionTitle, { fontSize: 16, marginBottom: 14 }]}>{items.length} colleges found</Text>}
+            ListEmptyComponent={<EmptyState title="No colleges found" body="Try a different name, course, or filter." />}
+            renderItem={({ item }) => <CollegeCard college={item} onPress={() => router.push(("/college/" + item.id) as any)} />}
+            contentContainerStyle={{ paddingBottom: 30 }}
+          />}
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  filterList: {
-    flexGrow: 0,
-    height: 53,
-    marginHorizontal: -20,
-    marginBottom: 2,
-  },
-
-  filterContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-});

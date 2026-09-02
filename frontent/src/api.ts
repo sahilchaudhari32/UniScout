@@ -1,4 +1,5 @@
 import { colleges as localColleges, College } from "./data";
+import * as SecureStore from "expo-secure-store";
 
 export const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5000/api";
@@ -6,9 +7,10 @@ export const apiBaseUrl =
 export async function apiRequest<T = any>(path: string, options: {
   method?: string; body?: unknown; token?: string;
 } = {}): Promise<T> {
+  const token = options.token || await SecureStore.getItemAsync("uniscout.auth.token");
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: options.method || "GET",
-    headers: { "Content-Type": "application/json", ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}) },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
   const payload = await response.json();
@@ -88,6 +90,20 @@ export function normalizeCollege(item: ApiCollege): College {
 export async function fetchCollege(id: string): Promise<College> {
   const payload = await apiRequest<{ college: ApiCollege }>("/colleges/" + encodeURIComponent(id));
   return normalizeCollege(payload.college);
+}
+
+export async function searchColleges(params: Record<string, string | number | boolean | undefined>) {
+  const query = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join("&");
+  const payload = await apiRequest<{ items: ApiCollege[]; pagination: { hasNextPage: boolean } }>(`/colleges?${query}`);
+  return { items: (payload.items || []).map(normalizeCollege), hasNextPage: payload.pagination?.hasNextPage || false };
+}
+
+export async function fetchNearby(latitude: number, longitude: number, radius = 50000) {
+  const payload = await apiRequest<{ items: ApiCollege[] }>(`/colleges/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`);
+  return (payload.items || []).map(normalizeCollege);
 }
 
 export async function fetchAllColleges(): Promise<College[]> {

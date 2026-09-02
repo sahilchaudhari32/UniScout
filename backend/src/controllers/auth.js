@@ -8,7 +8,7 @@ import {
 } from "../utils/auth.js";
 import { AppError, ok } from "../utils/api.js";
 export async function register(req, res) {
-  const { name, email, password } = req.body;
+  const { name, email, phone = "", password } = req.body;
   if (!name || name.trim().length < 2)
     throw new AppError(
       "Name must be at least 2 characters",
@@ -17,6 +17,8 @@ export async function register(req, res) {
     );
   if (!validator.isEmail(email || ""))
     throw new AppError("A valid email is required", 422, "VALIDATION_ERROR");
+  if (phone && !validator.isMobilePhone(phone, "any"))
+    throw new AppError("A valid phone number is required", 422, "VALIDATION_ERROR");
   if (!password || password.length < 8)
     throw new AppError(
       "Password must be at least 8 characters",
@@ -28,6 +30,7 @@ export async function register(req, res) {
   const user = await User.create({
     name: name.trim(),
     email: email.toLowerCase(),
+    phone: phone.trim(),
     passwordHash: await hashPassword(password),
   });
   return ok(
@@ -55,7 +58,7 @@ export async function me(req, res) {
 }
 export async function updateProfile(req, res) {
   const allowed = {};
-  for (const key of ["name", "avatar", "preferences"])
+  for (const key of ["name", "phone", "avatar", "preferences"])
     if (req.body[key] !== undefined) allowed[key] = req.body[key];
   const user = await User.findByIdAndUpdate(req.user._id, allowed, {
     new: true,

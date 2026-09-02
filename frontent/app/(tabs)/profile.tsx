@@ -34,6 +34,7 @@ export default function Profile() {
           <Text style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
             {user?.email || ""}
           </Text>
+          {user?.phone ? <Text style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>{user.phone}</Text> : null}
           <Pressable
             onPress={() => setNotice(true)}
             style={({ pressed }) => [s.outlineButton, pressed && s.pressed]}
