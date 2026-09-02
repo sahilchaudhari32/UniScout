@@ -47,8 +47,10 @@ try {
       upsert: true,
     },
   }));
+  const ids = records.map((record) => record.id);
+  const removed = await College.deleteMany({ externalId: { $nin: ids } });
   const result = await College.bulkWrite(operations, { ordered: false });
-  console.log(`Imported ${records.length} dataset colleges (${result.upsertedCount} new, ${result.modifiedCount} updated)`);
+  console.log(`Imported ${records.length} dataset colleges (${result.upsertedCount} new, ${result.modifiedCount} updated, ${removed.deletedCount} old removed)`);
 } finally {
   await closeDatabase();
 }
