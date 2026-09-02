@@ -189,6 +189,10 @@ async function importColleges() {
   console.log(
     `Imported ${uniqueRecords.size} unique colleges from CollegeDB (${importedCount} upserts)`,
   );
+  const removedSynthetic = await College.deleteMany({
+    externalId: /^college-\d+$/,
+  });
+  console.log(`Removed ${removedSynthetic.deletedCount} synthetic dataset colleges`);
 }
 
 await connectDatabase();

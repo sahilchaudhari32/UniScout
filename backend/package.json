@@ -7,7 +7,6 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seed.js",
-    "import:dataset": "node src/importDataset.js",
     "import:colleges": "node src/importColleges.js",
     "lint": "node --check src/server.js",
     "test": "node --check src/app.js"
