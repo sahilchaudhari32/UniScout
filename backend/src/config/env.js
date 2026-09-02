@@ -15,4 +15,5 @@ export const env = {
   collegeDbBaseUrl:
     process.env.COLLEGE_DB_BASE_URL || "https://api.collegedb.in",
   collegeDbApiKey: process.env.COLLEGE_DB_API_KEY || "",
+  collegeDataFile: process.env.COLLEGE_DATA_FILE || "./data/uniscout_colleges_1000.json",
 };

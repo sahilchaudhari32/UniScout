@@ -17,6 +17,9 @@ export default function Search() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -30,11 +33,27 @@ export default function Search() {
     try {
       const result = await searchColleges({ search: query, course: filter === "All" ? undefined : filter, page: 1, limit: 20, sort: "rating" });
       setItems(result.items);
+      setPage(1);
+      setHasNextPage(result.hasNextPage);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }
+
+  async function loadMore() {
+    if (loadingMore || !hasNextPage) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const result = await searchColleges({ search: query, course: filter === "All" ? undefined : filter, page: nextPage, limit: 20, sort: "rating" });
+      setItems((current) => [...current, ...result.items]);
+      setPage(nextPage);
+      setHasNextPage(result.hasNextPage);
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -54,6 +73,9 @@ export default function Search() {
             ListHeaderComponent={<Text style={[s.sectionTitle, { fontSize: 16, marginBottom: 14 }]}>{items.length} colleges found</Text>}
             ListEmptyComponent={<EmptyState title="No colleges found" body="Try a different name, course, or filter." />}
             renderItem={({ item }) => <CollegeCard college={item} onPress={() => router.push(("/college/" + item.id) as any)} />}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.primary} /> : null}
             contentContainerStyle={{ paddingBottom: 30 }}
           />}
       </View>

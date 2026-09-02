@@ -44,6 +44,7 @@ type ApiCollege = {
   images?: string[];
   courses?: string[];
   verified?: boolean;
+  rating?: number;
   coordinates?: {
     coordinates?: [number, number];
   };
@@ -70,7 +71,7 @@ export function normalizeCollege(item: ApiCollege): College {
     city: item.city,
     state: item.state,
     type: item.type || "College or University",
-    rating: 0,
+    rating: item.rating || 0,
     distance: "Nearby",
     image:
       item.images?.[0] ||
