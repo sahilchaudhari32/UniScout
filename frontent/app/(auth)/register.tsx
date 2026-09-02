@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth";
@@ -7,6 +7,7 @@ import { useTheme } from "../../src/theme";
 
 export default function Register() {
   const { signUp } = useAuth();
+  const router = useRouter();
   const { colors } = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,7 +25,7 @@ export default function Register() {
     if (password !== confirm) return setError("Passwords do not match.");
     setError("");
     setBusy(true);
-    try { await signUp(name.trim(), email.trim(), phone.trim(), password); }
+    try { await signUp(name.trim(), email.trim(), phone.trim(), password); router.replace("/(tabs)"); }
     catch (e) { setError(e instanceof Error ? e.message : "Unable to register"); }
     finally { setBusy(false); }
   }

@@ -8,12 +8,17 @@ export async function apiRequest<T = any>(path: string, options: {
   method?: string; body?: unknown; token?: string;
 } = {}): Promise<T> {
   const token = options.token || await SecureStore.getItemAsync("uniscout.auth.token");
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
     method: options.method || "GET",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-  });
-  const payload = await response.json();
+    });
+  } catch {
+    throw new Error(`Cannot connect to UniScout API at ${apiBaseUrl}. Ensure the phone and computer use the same Wi-Fi.`);
+  }
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.message || `Request failed (${response.status})`);
   return payload.data;
 }
