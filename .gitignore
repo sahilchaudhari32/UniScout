@@ -1,0 +1,15 @@
+# Installed dependencies
+**/node_modules/
+
+# Generated build output
+**/dist/
+**/.expo/
+
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local tooling and OS files
+.DS_Store
+Thumbs.db

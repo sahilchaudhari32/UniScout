@@ -1,0 +1,11 @@
+import { Router } from "express";
+import { asyncHandler } from "../utils/api.js";
+import { authenticate } from "../middleware/auth.js";
+import { upload } from "../middleware/upload.js";
+import * as c from "../controllers/media.js";
+const router = Router();
+router.get("/:collegeId", asyncHandler(c.list));
+router.post("/", authenticate, upload.single("file"), asyncHandler(c.create));
+router.patch("/:id", authenticate, asyncHandler(c.update));
+router.delete("/:id", authenticate, asyncHandler(c.remove));
+export default router;
